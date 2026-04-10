@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tìm Kiếm Nhạc Cụ</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5;}
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .upload-box { text-align: center; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; margin-bottom: 20px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px;}
+        button:hover { background: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+        #loading { display: none; text-align: center; color: #d9534f; margin: 20px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Truy Vấn Âm Thanh Nhạc Cụ</h1>
+        <p style="text-align: center;">Tải lên 1 file âm thanh (.wav) để tìm kiếm 5 file có đặc trưng giống nhất trong CSDL.</p>
+        
+        <div class="upload-box">
+            <input type="file" id="audioFile" accept=".wav" style="margin-bottom: 15px;"><br>
+            <button onclick="searchAudio()">🔍 Bắt Đầu Tìm Kiếm</button>
+        </div>
+
+        <div id="loading">⏳ Đang trích xuất Vector 19 chiều bằng AI và truy vấn Database... Vui lòng đợi!</div>
+
+        <div id="resultBox" style="display: none;">
+            <h3>🏆 Top 5 Kết Quả Tương Đồng Nhất:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Xếp hạng</th>
+                        <th>Nhạc cụ (Label)</th>
+                        <th>Tên File</th>
+                        <th>Độ lệch (Cosine Distance)</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function searchAudio() {
+            const fileInput = document.getElementById('audioFile');
+            if (fileInput.files.length === 0) {
+                alert('Vui lòng chọn 1 file .wav!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', fileInput.files[0]);
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultBox').style.display = 'none';
+
+            try {
+                // Gọi tới API backend Go
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('resultTableBody');
+                    tbody.innerHTML = '';
+                    
+                    data.results.forEach((item, index) => {
+                        // Khoảng cách Cosine càng nhỏ thì càng giống nhau
+                        const row = `<tr>
+                            <td>#${index + 1}</td>
+                            <td><strong style="color: #28a745;">${item.instrument}</strong></td>
+                            <td>${item.filename}</td>
+                            <td>${item.distance.toFixed(6)}</td>
+                        </tr>`;
+                        tbody.innerHTML += row;
+                    });
+                    
+                    document.getElementById('resultBox').style.display = 'block';
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra khi kết nối đến Server.');
+                console.error(error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
