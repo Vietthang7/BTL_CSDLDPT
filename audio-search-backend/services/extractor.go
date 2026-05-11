@@ -12,17 +12,18 @@ import (
 	"gorm.io/gorm"
 )
 
-func LoadCSVToDB(db *gorm.DB, filepath string) {
+func LoadCSVToDB(db *gorm.DB, dataCSVPath string, scalerCSVPath string) {
 	// Bước 1: Kiểm tra xem DB đã có dữ liệu chưa.
 	// Nếu có rồi thì bỏ qua để tránh mỗi lần chạy server lại insert thêm dữ liệu trùng lặp.
 	var count int64
 	db.Model(&models.AudioFeature{}).Count(&count)
 	if count > 0 {
 		log.Println("✅ Dữ liệu đã có sẵn trong Database, bỏ qua bước nạp CSV.")
+		ensureScalerParams(db, scalerCSVPath)
 		return
 	}
 	// Bước 2: Mở file CSV
-	file, err := os.Open(filepath)
+	file, err := os.Open(dataCSVPath)
 	if err != nil {
 		log.Fatalf("❌ Không thể mở file CSV: %v", err)
 	}
@@ -70,5 +71,64 @@ func LoadCSVToDB(db *gorm.DB, filepath string) {
 			log.Fatalf("❌ Lỗi khi insert dữ liệu vào DB: %v", err)
 		}
 		log.Println("✅ Dữ liệu đã được nạp vào Database thành công.")
+	}
+
+	ensureScalerParams(db, scalerCSVPath)
+}
+
+func ensureScalerParams(db *gorm.DB, scalerCSVPath string) {
+	if scalerCSVPath == "" {
+		return
+	}
+
+	var count int64
+	db.Model(&models.ScalerParam{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	file, err := os.Open(scalerCSVPath)
+	if err != nil {
+		log.Fatalf("❌ Không thể mở file scaler CSV: %v", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	_, err = reader.Read()
+	if err != nil {
+		log.Fatalf("❌ Lỗi đọc header scaler CSV: %v", err)
+	}
+
+	var records []models.ScalerParam
+	for {
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("❌ Lỗi đọc dòng scaler CSV: %v", err)
+		}
+		if len(row) < 3 {
+			continue
+		}
+
+		meanVal, errMean := strconv.ParseFloat(row[1], 64)
+		stdVal, errStd := strconv.ParseFloat(row[2], 64)
+		if errMean != nil || errStd != nil {
+			continue
+		}
+
+		records = append(records, models.ScalerParam{
+			FeatureName: row[0],
+			Mean:        meanVal,
+			Std:         stdVal,
+		})
+	}
+
+	if len(records) > 0 {
+		if err := db.Create(&records).Error; err != nil {
+			log.Fatalf("❌ Lỗi khi insert scaler params vào DB: %v", err)
+		}
+		log.Println("✅ Đã nạp scaler params vào Database thành công.")
 	}
 }

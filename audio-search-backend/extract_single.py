@@ -1,10 +1,62 @@
 import sys
+import os
+import csv
 import librosa
 import numpy as np
 import warnings
 warnings.filterwarnings('ignore') # Ẩn các cảnh báo rác của librosa
 
-def extract_single_feature(file_path):
+FEATURE_NAMES = (
+    [f"mfcc_{i + 1}" for i in range(13)]
+    +
+    [
+        "spectral_centroid",
+        "spectral_bandwidth",
+        "spectral_rolloff",
+        "zero_crossing_rate",
+        "rms_energy",
+        "spectral_contrast"
+    ]
+)
+
+
+def load_scaler_params(scaler_csv_path):
+    if not scaler_csv_path or not os.path.exists(scaler_csv_path):
+        return {}
+
+    params = {}
+    with open(scaler_csv_path, 'r', newline='', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        # Skip header
+        next(reader, None)
+        for row in reader:
+            if len(row) < 3:
+                continue
+            feature_name = row[0]
+            try:
+                mean_val = float(row[1])
+                std_val = float(row[2])
+            except ValueError:
+                continue
+            params[feature_name] = (mean_val, std_val)
+    return params
+
+
+def apply_scaler(feature_vector, scaler_params):
+    if not scaler_params:
+        return feature_vector
+
+    scaled = feature_vector.copy()
+    for i, name in enumerate(FEATURE_NAMES):
+        if name not in scaler_params:
+            continue
+        mean_val, std_val = scaler_params[name]
+        if std_val == 0:
+            continue
+        scaled[i] = (scaled[i] - mean_val) / std_val
+    return scaled
+
+def extract_single_feature(file_path, scaler_csv_path=None):
     try:
         y, sr = librosa.load(file_path, sr=22050)
         # Trích xuất dữ liệu đặc trưng 
@@ -22,6 +74,9 @@ def extract_single_feature(file_path):
             [rolloff_mean], [zcr_mean], [rms_mean], [contrast_mean]
         ])
 
+        scaler_params = load_scaler_params(scaler_csv_path)
+        feature_vector = apply_scaler(feature_vector, scaler_params)
+
         # In ra màn hình các số cách nhau bởi dấu cách để Golang đọc
         print(" ".join([f"{v:.6f}" for v in feature_vector]))
     except Exception as e:
@@ -31,4 +86,9 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("ERROR: No file path provided", file=sys.stderr)
         sys.exit(1)
-    extract_single_feature(sys.argv[1])
+    scaler_csv = None
+    if len(sys.argv) >= 3:
+        scaler_csv = sys.argv[2]
+    else:
+        scaler_csv = "../audio-feature-extractor/scaler_params.csv"
+    extract_single_feature(sys.argv[1], scaler_csv)

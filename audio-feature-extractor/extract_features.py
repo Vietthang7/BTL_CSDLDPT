@@ -3,8 +3,8 @@ import csv
 import librosa
 import numpy as np
 
-TRAIN_DIR = "Data_Train_to_DB"
-OUTPUT_CSV = "audio_features.csv"
+TRAIN_DIR = "audio-feature-extractor/Data_Train_to_DB"
+OUTPUT_CSV = "audio-feature-extractor/audio_features.csv"
 
 # Vector đặc trưng 19 chiều:
 # - 13 MFCC mean      → Âm sắc (timbre), phân biệt các nhạc cụ khác nhau
@@ -105,6 +105,40 @@ def main():
     print(f"   ❌ Lỗi:       {errors} file")
     print(f"   📄 Kết quả:   '{OUTPUT_CSV}'")
     print(f"   📐 Vector:    {len(FEATURE_NAMES)} chiều")
+    
+    # Chuẩn hóa dữ liệu (Z-score) để tính độ tương đồng Cosine
+    print(f"\n⏳ Đang tiến hành chuẩn hóa dữ liệu (Z-score)...")
+    try:
+        import pandas as pd
+        df = pd.read_csv(OUTPUT_CSV)
+        
+        # Cột đặc trưng là 19 cột đầu
+        num_cols = FEATURE_NAMES
+        
+        # Tính Mean và Std
+        mean_vals = df[num_cols].mean()
+        std_vals = df[num_cols].std().replace(0, 1e-10) # Tránh chia cho 0
+        
+        # Áp dụng chuẩn hóa (x - mean) / std
+        df[num_cols] = (df[num_cols] - mean_vals) / std_vals
+        
+        # Lưu ra file chuẩn hóa
+        norm_csv = "audio-feature-extractor/audio_features_normalized.csv"
+        df.to_csv(norm_csv, index=False)
+        
+        # Lưu file tham số để Backend dùng cho các file truy vấn sau này
+        scaler_params = pd.DataFrame({'mean': mean_vals, 'std': std_vals})
+        scaler_csv = "audio-feature-extractor/scaler_params.csv"
+        scaler_params.to_csv(scaler_csv)
+        
+        print(f"   ✅ Đã chuẩn hóa xong!")
+        print(f"   📄 File chuẩn hóa: '{norm_csv}'")
+        print(f"   ⚙️ Tham số Scaler: '{scaler_csv}'")
+    except ImportError:
+        print(f"   ❌ Thiếu thư viện 'pandas'. Hãy chạy 'pip install pandas' để chuẩn hóa.")
+    except Exception as e:
+        print(f"   ❌ Lỗi chuẩn hóa: {e}")
+        
     print(f"{'=' * 60}")
 
 if __name__ == "__main__":

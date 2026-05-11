@@ -14,7 +14,11 @@ func main() {
 	db := config.ConnectDB()
 
 	// 2. Load CSV vào DB (chạy 1 lần, tự bỏ qua nếu đã có dữ liệu)
-	services.LoadCSVToDB(db, "../audio-feature-extractor/audio_features.csv")
+	services.LoadCSVToDB(
+		db,
+		"../audio-feature-extractor/audio_features_normalized.csv",
+		"../audio-feature-extractor/scaler_params.csv",
+	)
 
 	// 3. Khởi tạo Fiber app
 	app := fiber.New(fiber.Config{
@@ -22,6 +26,8 @@ func main() {
 	})
 	// THÊM DÒNG NÀY ĐỂ HIỂN THỊ GIAO DIỆN WEB TỪ THƯ MỤC "public"
 	app.Static("/", "./public")
+	// Phục vụ file audio để nghe trực tiếp trên web
+	app.Static("/audio", "../audio-feature-extractor/Data_Train_to_DB")
 
 	//// 4. Routes
 	api := app.Group("/api")

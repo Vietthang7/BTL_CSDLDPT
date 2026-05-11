@@ -17,3 +17,11 @@ type AudioFeature struct {
 	FeatureVector pgvector.Vector `gorm:"type:vector(19);not null" json:"feature_vector"`
 	CreatedAt     time.Time       `json:"created_at"`
 }
+
+type ScalerParam struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	FeatureName string    `gorm:"size:100;not null;uniqueIndex" json:"feature_name"`
+	Mean        float64   `gorm:"not null" json:"mean"`
+	Std         float64   `gorm:"not null" json:"std"`
+	CreatedAt   time.Time `json:"created_at"`
+}

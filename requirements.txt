@@ -1,0 +1,7 @@
+librosa
+numpy
+pandas
+matplotlib
+ipython
+jupyter
+soundfile

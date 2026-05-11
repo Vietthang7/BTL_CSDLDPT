@@ -5,3 +5,6 @@
 /audio-search-backend/.idea/
 /audio-search-backend/tmp/
 /Slides
+/audio-feature-extractor/audio_features_normalized.csv
+/audio-feature-extractor/audio_features.csv
+/audio-feature-extractor/scaler_params.csv
