@@ -9,7 +9,7 @@ import (
 )
 
 func ConnectDB() *gorm.DB {
-	dsn := "host=localhost user=postgres password=postgres dbname=audio_search port=5432 sslmode=disable"
+	dsn := "host=127.0.0.1 user=postgres password=123456 dbname=audio_search port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("❌ Không thể kết nối PostgreSQL:", err)
