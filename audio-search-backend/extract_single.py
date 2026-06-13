@@ -21,6 +21,10 @@ FEATURE_NAMES = (
 
 
 def load_scaler_params(scaler_csv_path):
+    """
+        Đọc file scaler_params.csv (mean, std của 19 đặc trưng tính từ tập train)
+        và trả về dict {tên_đặc_trưng: (mean, std)} để dùng cho việc chuẩn hóa.
+    """
     if not scaler_csv_path or not os.path.exists(scaler_csv_path):
         return {}
 
@@ -43,6 +47,10 @@ def load_scaler_params(scaler_csv_path):
 
 
 def apply_scaler(feature_vector, scaler_params):
+    """
+        Chuẩn hóa Z-score vector đặc trưng: (x - mean) / std,
+        dùng đúng mean/std đã tính từ tập train để đảm bảo cùng thang đo với DB.
+    """
     if not scaler_params:
         return feature_vector
 
@@ -57,6 +65,10 @@ def apply_scaler(feature_vector, scaler_params):
     return scaled
 
 def extract_single_feature(file_path, scaler_csv_path=None):
+    """
+        Trích xuất vector 19 chiều cho 1 file audio (giống công thức extract_features.py),
+        chuẩn hóa bằng scaler_params đã lưu, rồi in ra stdout để Go đọc kết quả.
+    """
     try:
         y, sr = librosa.load(file_path, sr=22050)
         # Trích xuất dữ liệu đặc trưng 

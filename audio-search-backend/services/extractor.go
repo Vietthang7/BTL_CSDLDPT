@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// LoadCSVToDB nạp dữ liệu đặc trưng (audio_features_normalized.csv) vào bảng audio_features.
+// Nếu DB đã có dữ liệu thì bỏ qua bước nạp, chỉ đảm bảo scaler params và HNSW index tồn tại.
 func LoadCSVToDB(db *gorm.DB, dataCSVPath string, scalerCSVPath string) {
 	// Bước 1: Kiểm tra xem DB đã có dữ liệu chưa.
 	var count int64
@@ -74,6 +76,8 @@ func LoadCSVToDB(db *gorm.DB, dataCSVPath string, scalerCSVPath string) {
 	ensureHNSWIndex(db) // Tạo HNSW index sau khi load dữ liệu
 }
 
+// ensureScalerParams nạp tham số mean/std (scaler_params.csv) vào bảng scaler_params
+// nếu bảng này đang trống, để dùng cho việc chuẩn hóa vector truy vấn ở extract_single.py.
 func ensureScalerParams(db *gorm.DB, scalerCSVPath string) {
 	if scalerCSVPath == "" {
 		return

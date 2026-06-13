@@ -32,7 +32,10 @@ FEATURE_NAMES = (
 def extract_features(file_path):
     """
         Đọc file .wav và trích xuất vector đặc trưng 19 chiều.
-        Sử dụng sample rate 22050 Hz (chuẩn cho phân tích âm nhạc).
+        Sử dụng sample rate 22050 Hz (chuẩn cho phân tích âm nhạc). 
+        22050Hz là sample rate chuẩn phổ biến cho phân tích âm nhạc
+        việc resample tất cả file về cùng 1 sample rate đảm bảo các đặc trưng tần số (Hz) 
+        giữa các file có thể so sánh công bằng với nhau.
     """
     y , sr = librosa.load(file_path,sr = 22050)
     # 1. MFCC - 13 hệ số (đặc trưng âm sắc chính)
@@ -70,6 +73,10 @@ def extract_features(file_path):
     return feature_vector
 
 def main():
+    """
+        Trích xuất đặc trưng cho toàn bộ file .wav trong TRAIN_DIR, ghi ra OUTPUT_CSV,
+        sau đó chuẩn hóa Z-score và lưu ra file CSV đã chuẩn hóa cùng tham số scaler.
+    """
     header = FEATURE_NAMES + ["instrument", "filename"]
 
     processed = 0
